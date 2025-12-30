@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculadora Esencias Pro - Save Edition</title>
+    <style>
+        :root { --primary: #9d4edd; --accent: #c77dff; --bg: #0b0118; --card: #1a0033; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #eee; display: flex; justify-content: center; padding: 10px; margin: 0; }
+        .container { width: 100%; max-width: 480px; background: var(--card); padding: 15px; border-radius: 15px; border: 1px solid #5a189a; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        h2 { text-align: center; color: var(--accent); margin: 0 0 10px 0; font-size: 1.2em; text-transform: uppercase; }
+        
+        .grid-config { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+        .config-box { background: rgba(157, 78, 221, 0.1); padding: 6px; border-radius: 8px; border: 1px solid #3c096c; }
+        
+        .grid-items { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .item-card { background: rgba(255,255,255,0.03); padding: 6px 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--primary); }
+        
+        label { font-size: 0.7em; color: var(--accent); display: block; margin-bottom: 2px; }
+        input { width: 50px; background: #240046; border: 1px solid #7b2cbf; color: white; padding: 4px; border-radius: 5px; text-align: right; font-size: 0.9em; }
+        .full-input { width: 85%; }
+
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+        button { padding: 8px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 0.8em; transition: 0.3s; }
+        .btn-save { background: var(--primary); color: white; border: 1px solid var(--accent); }
+        .btn-save:hover { background: var(--accent); transform: scale(1.02); }
+        .btn-clear { background: #3c096c; color: #c77dff; border: 1px solid #5a189a; }
+        .btn-clear:hover { background: #f44336; color: white; }
+
+        .results { margin-top: 5px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 10px; border: 1px solid var(--primary); }
+        .res-row { display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 2px; }
+        .status { text-align: center; font-weight: bold; margin-top: 5px; padding: 5px; border-radius: 6px; font-size: 0.85em; }
+        .meta-ok { background: rgba(76, 175, 80, 0.2); color: #81c784; border: 1px solid #4caf50; }
+        .meta-fail { background: rgba(244, 67, 54, 0.2); color: #e57373; border: 1px solid #f44336; }
+        
+        .recom-section { margin-top: 10px; background: #240046; padding: 10px; border-radius: 10px; font-size: 0.8em; border: 1px dashed var(--accent); }
+        .recom-title { color: var(--accent); font-weight: bold; margin-bottom: 5px; display: block; border-bottom: 1px solid #3c096c; }
+        .recom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+        .optimo { color: #81c784; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Calculadora de Esencias</h2>
+    
+    <div class="grid-config">
+        <div class="config-box">
+            <label>SALDO ACTUAL</label>
+            <input type="number" id="saldo-inicial" class="full-input" value="0" oninput="calcular()">
+        </div>
+        <div class="config-box">
+            <label>META FINAL</label>
+            <input type="number" id="meta-valor" class="full-input" value="0" oninput="calcular()">
+        </div>
+    </div>
+
+    <div id="inputs-area" class="grid-items"></div>
+
+    <div class="btn-group">
+        <button class="btn-save" onclick="guardarProgreso()">💾 GUARDAR DATOS</button>
+        <button class="btn-clear" onclick="limpiarTodo()">🧹 LIMPIAR TODO</button>
+    </div>
+
+    <div class="results">
+        <div class="res-row"><span>Ganancia venta:</span><span id="total-venta">0</span></div>
+        <div class="res-row" style="color: var(--accent); font-weight: bold;">
+            <span>Balance total:</span><span id="nuevo-balance">0</span>
+        </div>
+        <div id="mensaje-meta" class="status meta-ok">Ingresa una meta</div>
+    </div>
+
+    <div id="recomendacion-area" class="recom-section">
+        <span class="recom-title">💡 Sugerencia para completar</span>
+        <div id="recom-list" class="recom-grid"></div>
+    </div>
+</div>
+
+<script>
+    const precios = {
+        "Minúscula": 2.5, "Pequeña": 5, "Mediana": 15,
+        "Grande": 35, "Mayor": 50, "Superior": 75, "Épica": 100
+    };
+
+    const inputsArea = document.getElementById('inputs-area');
+    const fmt = (n) => Math.ceil(n).toLocaleString('de-DE');
+
+    // Generar Inputs
+    Object.entries(precios).forEach(([nombre, precio]) => {
+        const div = document.createElement('div');
+        div.className = 'item-card';
+        div.innerHTML = `
+            <div><small style="display:block; line-height:1">${nombre}</small><b style="color:var(--accent); font-size:0.8em">$${precio}</b></div>
+            <input type="number" class="cant" id="input-${nombre}" min="0" placeholder="0" oninput="calcular()" data-precio="${precio}">
+        `;
+        inputsArea.appendChild(div);
+    });
+
+    function calcular() {
+        const saldo = parseFloat(document.getElementById('saldo-inicial').value) || 0;
+        const meta = parseFloat(document.getElementById('meta-valor').value) || 0;
+        let venta = 0;
+        
+        document.querySelectorAll('.cant').forEach(i => {
+            venta += (parseFloat(i.value) || 0) * parseFloat(i.dataset.precio);
+        });
+
+        const total = saldo + venta;
+        const faltante = meta - total;
+        
+        document.getElementById('total-venta').innerText = fmt(venta);
+        document.getElementById('nuevo-balance').innerText = fmt(total);
+
+        const msg = document.getElementById('mensaje-meta');
+        const recomArea = document.getElementById('recomendacion-area');
+        const recomList = document.getElementById('recom-list');
+        recomList.innerHTML = '';
+
+        if (total >= meta) {
+            msg.className = 'status meta-ok';
+            msg.innerText = meta === 0 ? 'Ingresa una meta' : '¡META LOGRADA! +' + fmt(total - meta);
+            recomArea.style.display = 'none';
+        } else {
+            msg.className = 'status meta-fail';
+            msg.innerText = 'Faltan: ' + fmt(faltante);
+            recomArea.style.display = 'block';
+
+            Object.entries(precios).reverse().forEach(([nombre, precio]) => {
+                const unidades = Math.ceil(faltante / precio);
+                const isOptimo = nombre === "Épica" ? 'class="optimo"' : '';
+                recomList.innerHTML += `<div ${isOptimo}>${nombre}: <b>${fmt(unidades)}</b></div>`;
+            });
+        }
+    }
+
+    // --- FUNCIONES DE PERSISTENCIA ---
+    function guardarProgreso() {
+        const datos = {
+            saldo: document.getElementById('saldo-inicial').value,
+            meta: document.getElementById('meta-valor').value,
+            cantidades: {}
+        };
+        
+        document.querySelectorAll('.cant').forEach(i => {
+            datos.cantidades[i.id] = i.value;
+        });
+
+        localStorage.setItem('esencias_data', JSON.stringify(datos));
+        alert("¡Datos guardados con éxito!");
+    }
+
+    function cargarProgreso() {
+        const guardado = localStorage.getItem('esencias_data');
+        if (guardado) {
+            const datos = JSON.parse(guardado);
+            document.getElementById('saldo-inicial').value = datos.saldo;
+            document.getElementById('meta-valor').value = datos.meta;
+            
+            for (const id in datos.cantidades) {
+                const input = document.getElementById(id);
+                if (input) input.value = datos.cantidades[id];
+            }
+            calcular();
+        }
+    }
+
+    function limpiarTodo() {
+        if(confirm("¿Seguro que quieres borrar todo?")) {
+            localStorage.removeItem('esencias_data');
+            location.reload();
+        }
+    }
+
+    // Cargar al iniciar
+    cargarProgreso();
+</script>
+
+</body>
+</html>
