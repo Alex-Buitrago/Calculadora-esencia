@@ -2,177 +2,730 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Calculadora Esencias Pro - Save Edition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Esencias Pro - Calculator</title>
     <style>
-        :root { --primary: #9d4edd; --accent: #c77dff; --bg: #0b0118; --card: #1a0033; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #eee; display: flex; justify-content: center; padding: 10px; margin: 0; }
-        .container { width: 100%; max-width: 480px; background: var(--card); padding: 15px; border-radius: 15px; border: 1px solid #5a189a; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-        h2 { text-align: center; color: var(--accent); margin: 0 0 10px 0; font-size: 1.2em; text-transform: uppercase; }
-        
-        .grid-config { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-        .config-box { background: rgba(157, 78, 221, 0.1); padding: 6px; border-radius: 8px; border: 1px solid #3c096c; }
-        
-        .grid-items { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-        .item-card { background: rgba(255,255,255,0.03); padding: 6px 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid var(--primary); }
-        
-        label { font-size: 0.7em; color: var(--accent); display: block; margin-bottom: 2px; }
-        input { width: 50px; background: #240046; border: 1px solid #7b2cbf; color: white; padding: 4px; border-radius: 5px; text-align: right; font-size: 0.9em; }
-        .full-input { width: 85%; }
+        /* ===== VARIABLES & RESET ===== */
+        :root {
+            --primary: #9d4edd;
+            --primary-dark: #7b2cbf;
+            --primary-light: #c77dff;
+            --accent: #e0aaff;
+            --bg-main: #10002b;
+            --bg-card: #240046;
+            --bg-input: #3c096c;
+            --success: #4caf50;
+            --success-light: #81c784;
+            --error: #f44336;
+            --error-light: #e57373;
+            --text-main: #ffffff;
+            --text-secondary: #e0aaff;
+            --border: #5a189a;
+            --shadow-sm: 0 2px 8px rgba(157, 78, 221, 0.15);
+            --shadow-md: 0 8px 24px rgba(157, 78, 221, 0.25);
+            --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.6);
+        }
 
-        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
-        button { padding: 8px; border-radius: 8px; border: none; cursor: pointer; font-weight: bold; font-size: 0.8em; transition: 0.3s; }
-        .btn-save { background: var(--primary); color: white; border: 1px solid var(--accent); }
-        .btn-save:hover { background: var(--accent); transform: scale(1.02); }
-        .btn-clear { background: #3c096c; color: #c77dff; border: 1px solid #5a189a; }
-        .btn-clear:hover { background: #f44336; color: white; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-        .results { margin-top: 5px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 10px; border: 1px solid var(--primary); }
-        .res-row { display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 2px; }
-        .status { text-align: center; font-weight: bold; margin-top: 5px; padding: 5px; border-radius: 6px; font-size: 0.85em; }
-        .meta-ok { background: rgba(76, 175, 80, 0.2); color: #81c784; border: 1px solid #4caf50; }
-        .meta-fail { background: rgba(244, 67, 54, 0.2); color: #e57373; border: 1px solid #f44336; }
-        
-        .recom-section { margin-top: 10px; background: #240046; padding: 10px; border-radius: 10px; font-size: 0.8em; border: 1px dashed var(--accent); }
-        .recom-title { color: var(--accent); font-weight: bold; margin-bottom: 5px; display: block; border-bottom: 1px solid #3c096c; }
-        .recom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
-        .optimo { color: #81c784; font-weight: bold; }
+        /* ===== BODY & CONTAINER ===== */
+        body {
+            font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--bg-main) 0%, #1a0033 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding: 20px 10px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            -webkit-tap-highlight-color: transparent;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(157, 78, 221, 0.1) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: moveGrid 20s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes moveGrid {
+            0% { transform: translate(0, 0); }
+            100% { transform: translate(50px, 50px); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 600px;
+            background: var(--bg-card);
+            padding: 30px;
+            border-radius: 24px;
+            border: 2px solid var(--border);
+            box-shadow: var(--shadow-lg);
+            backdrop-filter: blur(10px);
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== HEADER ===== */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* ===== CONFIG GRID ===== */
+        .config-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .config-box {
+            background: linear-gradient(135deg, rgba(157, 78, 221, 0.1) 0%, rgba(60, 9, 108, 0.1) 100%);
+            padding: 18px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .config-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--primary-light));
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .config-box:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .config-box:hover::before {
+            opacity: 1;
+        }
+
+        .config-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+            color: var(--accent);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .config-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 2px solid transparent;
+            color: var(--text-main);
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .config-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(157, 78, 221, 0.2);
+        }
+
+        /* ===== ESSENCE ITEMS ===== */
+        .items-section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            color: var(--accent);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .items-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 12px;
+        }
+
+        .item-card {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 14px;
+            border-radius: 14px;
+            border-left: 4px solid var(--primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .item-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(157, 78, 221, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .item-card:hover {
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateX(4px);
+        }
+
+        .item-card:hover::before {
+            left: 100%;
+        }
+
+        .item-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .essence-img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            filter: drop-shadow(0 0 8px var(--primary));
+            transition: transform 0.3s ease;
+        }
+
+        .item-card:hover .essence-img {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .item-details {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .item-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .item-price {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .item-input {
+            width: 80px;
+            background: var(--bg-input);
+            border: 2px solid transparent;
+            color: var(--text-main);
+            padding: 8px 12px;
+            border-radius: 10px;
+            text-align: right;
+            font-weight: 700;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .item-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(157, 78, 221, 0.2);
+        }
+
+        /* ===== BUTTONS ===== */
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .btn {
+            padding: 14px 20px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+
+        .btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-save:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+        }
+
+        .btn-clear {
+            background: var(--bg-input);
+            color: var(--primary-light);
+            border: 2px solid var(--border);
+        }
+
+        .btn-clear:hover {
+            background: var(--border);
+            transform: translateY(-2px);
+        }
+
+        /* ===== RESULTS ===== */
+        .results-section {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.2) 100%);
+            padding: 20px;
+            border-radius: 16px;
+            border: 2px solid var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            font-size: 1rem;
+            border-bottom: 1px solid rgba(157, 78, 221, 0.2);
+        }
+
+        .result-row:last-child {
+            border-bottom: none;
+        }
+
+        .result-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .result-value {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .result-total {
+            color: var(--accent);
+            font-size: 1.3rem;
+        }
+
+        .status-message {
+            text-align: center;
+            font-weight: 700;
+            margin-top: 15px;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 1rem;
+            animation: pulse 2s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        .status-success {
+            background: rgba(76, 175, 80, 0.2);
+            color: var(--success-light);
+            border: 2px solid var(--success);
+        }
+
+        .status-error {
+            background: rgba(244, 67, 54, 0.2);
+            color: var(--error-light);
+            border: 2px solid var(--error);
+        }
+
+        /* ===== RECOMMENDATIONS ===== */
+        .recommendations {
+            background: var(--bg-input);
+            padding: 20px;
+            border-radius: 16px;
+            border: 2px dashed var(--accent);
+        }
+
+        .recommendations-title {
+            font-size: 0.9rem;
+            color: var(--accent);
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .recommendations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+        }
+
+        .recommendation-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            border: 1px solid rgba(157, 78, 221, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .recommendation-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
+        }
+
+        .optimal {
+            color: var(--success-light);
+            font-weight: 700;
+            border-color: var(--success);
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 1.6rem;
+            }
+
+            .config-section {
+                grid-template-columns: 1fr;
+            }
+
+            .items-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ===== UTILITIES ===== */
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
-
-<div class="container">
-    <h2>Calculadora de Esencias</h2>
-    
-    <div class="grid-config">
-        <div class="config-box">
-            <label>SALDO ACTUAL</label>
-            <input type="number" id="saldo-inicial" class="full-input" value="0" oninput="calcular()">
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>⚡ FORGE CALCULATOR</h1>
+            <p>Optimiza tus esencias con precisión</p>
         </div>
-        <div class="config-box">
-            <label>META FINAL</label>
-            <input type="number" id="meta-valor" class="full-input" value="0" oninput="calcular()">
+
+        <!-- Config Section -->
+        <div class="config-section">
+            <div class="config-box">
+                <div class="config-label">
+                    <span>💰</span>
+                    <span>Saldo Actual</span>
+                </div>
+                <input type="number" id="saldo-inicial" class="config-input" value="0" placeholder="0">
+            </div>
+            <div class="config-box">
+                <div class="config-label">
+                    <span>🎯</span>
+                    <span>Meta Final</span>
+                </div>
+                <input type="number" id="meta-valor" class="config-input" value="0" placeholder="0">
+            </div>
+        </div>
+
+        <!-- Items Section -->
+        <div class="items-section">
+            <div class="section-title">
+                <span>✨</span>
+                <span>Inventario de Esencias</span>
+            </div>
+            <div id="items-grid" class="items-grid"></div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="button-group">
+            <button class="btn btn-save" id="btn-save">
+                💾 Guardar Progreso
+            </button>
+            <button class="btn btn-clear" id="btn-clear">
+                🧹 Limpiar Todo
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div class="results-section">
+            <div class="result-row">
+                <span class="result-label">Venta Total:</span>
+                <span class="result-value" id="total-venta">0</span>
+            </div>
+            <div class="result-row">
+                <span class="result-label">Nuevo Balance:</span>
+                <span class="result-value result-total" id="nuevo-balance">0</span>
+            </div>
+            <div id="status-message" class="status-message status-success">
+                Ingresa tus datos para comenzar
+            </div>
+        </div>
+
+        <!-- Recommendations -->
+        <div id="recommendations" class="recommendations hidden">
+            <div class="recommendations-title">
+                <span>💡</span>
+                <span>Sugerencias de Compra</span>
+            </div>
+            <div id="recommendations-grid" class="recommendations-grid"></div>
         </div>
     </div>
 
-    <div id="inputs-area" class="grid-items"></div>
+    <script>
+        // ===== DATA =====
+        const essencesData = [
+            { name: "Minúscula", price: 2.5, img: "https://static.wikitide.net/theforgewiki/e/ef/TinyEssence.png" },
+            { name: "Pequeña", price: 5, img: "https://static.wikitide.net/theforgewiki/8/84/SmallEssence.png" },
+            { name: "Mediana", price: 15, img: "https://static.wikitide.net/theforgewiki/thumb/3/38/MediumEssence.png/100px-MediumEssence.png" },
+            { name: "Grande", price: 35, img: "https://static.wikitide.net/theforgewiki/thumb/3/33/LargeEssence.png/100px-LargeEssence.png" },
+            { name: "Mayor", price: 50, img: "https://static.wikitide.net/theforgewiki/thumb/3/3c/GreaterEssence.png/100px-GreaterEssence.png" },
+            { name: "Superior", price: 75, img: "https://static.wikitide.net/theforgewiki/thumb/6/6b/SuperiorEssence.png/100px-SuperiorEssence.png" },
+            { name: "Épica", price: 100, img: "https://static.wikitide.net/theforgewiki/thumb/8/89/EpicEssence.png/100px-EpicEssence.png" }
+        ];
 
-    <div class="btn-group">
-        <button class="btn-save" onclick="guardarProgreso()">💾 GUARDAR DATOS</button>
-        <button class="btn-clear" onclick="limpiarTodo()">🧹 LIMPIAR TODO</button>
-    </div>
+        // ===== DOM ELEMENTS =====
+        const itemsGrid = document.getElementById('items-grid');
+        const saldoInput = document.getElementById('saldo-inicial');
+        const metaInput = document.getElementById('meta-valor');
+        const totalVenta = document.getElementById('total-venta');
+        const nuevoBalance = document.getElementById('nuevo-balance');
+        const statusMessage = document.getElementById('status-message');
+        const recommendationsSection = document.getElementById('recommendations');
+        const recommendationsGrid = document.getElementById('recommendations-grid');
+        const btnSave = document.getElementById('btn-save');
+        const btnClear = document.getElementById('btn-clear');
 
-    <div class="results">
-        <div class="res-row"><span>Ganancia venta:</span><span id="total-venta">0</span></div>
-        <div class="res-row" style="color: var(--accent); font-weight: bold;">
-            <span>Balance total:</span><span id="nuevo-balance">0</span>
-        </div>
-        <div id="mensaje-meta" class="status meta-ok">Ingresa una meta</div>
-    </div>
+        // ===== UTILITY FUNCTIONS =====
+        const formatNumber = (num) => Math.ceil(num).toLocaleString('de-DE');
 
-    <div id="recomendacion-area" class="recom-section">
-        <span class="recom-title">💡 Sugerencia para completar</span>
-        <div id="recom-list" class="recom-grid"></div>
-    </div>
-</div>
-
-<script>
-    const precios = {
-        "Minúscula": 2.5, "Pequeña": 5, "Mediana": 15,
-        "Grande": 35, "Mayor": 50, "Superior": 75, "Épica": 100
-    };
-
-    const inputsArea = document.getElementById('inputs-area');
-    const fmt = (n) => Math.ceil(n).toLocaleString('de-DE');
-
-    // Generar Inputs
-    Object.entries(precios).forEach(([nombre, precio]) => {
-        const div = document.createElement('div');
-        div.className = 'item-card';
-        div.innerHTML = `
-            <div><small style="display:block; line-height:1">${nombre}</small><b style="color:var(--accent); font-size:0.8em">$${precio}</b></div>
-            <input type="number" class="cant" id="input-${nombre}" min="0" placeholder="0" oninput="calcular()" data-precio="${precio}">
-        `;
-        inputsArea.appendChild(div);
-    });
-
-    function calcular() {
-        const saldo = parseFloat(document.getElementById('saldo-inicial').value) || 0;
-        const meta = parseFloat(document.getElementById('meta-valor').value) || 0;
-        let venta = 0;
-        
-        document.querySelectorAll('.cant').forEach(i => {
-            venta += (parseFloat(i.value) || 0) * parseFloat(i.dataset.precio);
-        });
-
-        const total = saldo + venta;
-        const faltante = meta - total;
-        
-        document.getElementById('total-venta').innerText = fmt(venta);
-        document.getElementById('nuevo-balance').innerText = fmt(total);
-
-        const msg = document.getElementById('mensaje-meta');
-        const recomArea = document.getElementById('recomendacion-area');
-        const recomList = document.getElementById('recom-list');
-        recomList.innerHTML = '';
-
-        if (total >= meta) {
-            msg.className = 'status meta-ok';
-            msg.innerText = meta === 0 ? 'Ingresa una meta' : '¡META LOGRADA! +' + fmt(total - meta);
-            recomArea.style.display = 'none';
-        } else {
-            msg.className = 'status meta-fail';
-            msg.innerText = 'Faltan: ' + fmt(faltante);
-            recomArea.style.display = 'block';
-
-            Object.entries(precios).reverse().forEach(([nombre, precio]) => {
-                const unidades = Math.ceil(faltante / precio);
-                const isOptimo = nombre === "Épica" ? 'class="optimo"' : '';
-                recomList.innerHTML += `<div ${isOptimo}>${nombre}: <b>${fmt(unidades)}</b></div>`;
+        // ===== RENDER ITEMS =====
+        function renderItems() {
+            essencesData.forEach(essence => {
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                card.innerHTML = `
+                    <div class="item-info">
+                        <img src="${essence.img}" class="essence-img" alt="${essence.name}">
+                        <div class="item-details">
+                            <div class="item-name">${essence.name}</div>
+                            <div class="item-price">$${essence.price}</div>
+                        </div>
+                    </div>
+                    <input 
+                        type="number" 
+                        class="item-input essence-input" 
+                        id="input-${essence.name}" 
+                        min="0" 
+                        placeholder="0"
+                        data-price="${essence.price}"
+                    >
+                `;
+                itemsGrid.appendChild(card);
             });
         }
-    }
 
-    // --- FUNCIONES DE PERSISTENCIA ---
-    function guardarProgreso() {
-        const datos = {
-            saldo: document.getElementById('saldo-inicial').value,
-            meta: document.getElementById('meta-valor').value,
-            cantidades: {}
-        };
+        // ===== CALCULATE =====
+        function calculate() {
+            const saldo = parseFloat(saldoInput.value) || 0;
+            const meta = parseFloat(metaInput.value) || 0;
+            let venta = 0;
+
+            document.querySelectorAll('.essence-input').forEach(input => {
+                const quantity = parseFloat(input.value) || 0;
+                const price = parseFloat(input.dataset.price);
+                venta += quantity * price;
+            });
+
+            const total = saldo + venta;
+            const faltante = meta - total;
+
+            totalVenta.textContent = formatNumber(venta);
+            nuevoBalance.textContent = formatNumber(total);
+
+            if (meta === 0) {
+                statusMessage.textContent = 'Ingresa tus datos para comenzar';
+                statusMessage.className = 'status-message status-success';
+                recommendationsSection.classList.add('hidden');
+            } else if (total >= meta) {
+                const exceso = total - meta;
+                statusMessage.textContent = `¡META LOGRADA! +${formatNumber(exceso)}`;
+                statusMessage.className = 'status-message status-success';
+                recommendationsSection.classList.add('hidden');
+            } else {
+                statusMessage.textContent = `Faltan: ${formatNumber(faltante)}`;
+                statusMessage.className = 'status-message status-error';
+                showRecommendations(faltante);
+            }
+        }
+
+        // ===== RECOMMENDATIONS =====
+        function showRecommendations(faltante) {
+            recommendationsSection.classList.remove('hidden');
+            recommendationsGrid.innerHTML = '';
+
+            [...essencesData].reverse().forEach(essence => {
+                const unidades = Math.ceil(faltante / essence.price);
+                const isOptimal = essence.name === "Épica";
+                
+                const item = document.createElement('div');
+                item.className = `recommendation-item ${isOptimal ? 'optimal' : ''}`;
+                item.innerHTML = `${essence.name}: <b>${formatNumber(unidades)}</b>`;
+                recommendationsGrid.appendChild(item);
+            });
+        }
+
+        // ===== SAVE PROGRESS =====
+        function saveProgress() {
+            const data = {
+                saldo: saldoInput.value,
+                meta: metaInput.value,
+                quantities: {}
+            };
+
+            document.querySelectorAll('.essence-input').forEach(input => {
+                data.quantities[input.id] = input.value;
+            });
+
+            // Using in-memory storage instead of localStorage
+            window.essenceData = data;
+            
+            statusMessage.textContent = '¡Progreso guardado exitosamente!';
+            statusMessage.className = 'status-message status-success';
+            
+            setTimeout(() => {
+                calculate();
+            }, 2000);
+        }
+
+        // ===== LOAD PROGRESS =====
+        function loadProgress() {
+            if (window.essenceData) {
+                const data = window.essenceData;
+                saldoInput.value = data.saldo;
+                metaInput.value = data.meta;
+
+                for (const id in data.quantities) {
+                    const input = document.getElementById(id);
+                    if (input) input.value = data.quantities[id];
+                }
+
+                calculate();
+            }
+        }
+
+        // ===== CLEAR ALL =====
+        function clearAll() {
+            if (confirm('¿Estás seguro de que deseas borrar todo el progreso?')) {
+                window.essenceData = null;
+                window.location.reload();
+            }
+        }
+
+        // ===== EVENT LISTENERS =====
+        saldoInput.addEventListener('input', calculate);
+        metaInput.addEventListener('input', calculate);
+        btnSave.addEventListener('click', saveProgress);
+        btnClear.addEventListener('click', clearAll);
+
+        // ===== INITIALIZATION =====
+        renderItems();
         
-        document.querySelectorAll('.cant').forEach(i => {
-            datos.cantidades[i.id] = i.value;
+        // Add event listeners to all essence inputs after rendering
+        document.querySelectorAll('.essence-input').forEach(input => {
+            input.addEventListener('input', calculate);
         });
 
-        localStorage.setItem('esencias_data', JSON.stringify(datos));
-        alert("¡Datos guardados con éxito!");
-    }
-
-    function cargarProgreso() {
-        const guardado = localStorage.getItem('esencias_data');
-        if (guardado) {
-            const datos = JSON.parse(guardado);
-            document.getElementById('saldo-inicial').value = datos.saldo;
-            document.getElementById('meta-valor').value = datos.meta;
-            
-            for (const id in datos.cantidades) {
-                const input = document.getElementById(id);
-                if (input) input.value = datos.cantidades[id];
-            }
-            calcular();
-        }
-    }
-
-    function limpiarTodo() {
-        if(confirm("¿Seguro que quieres borrar todo?")) {
-            localStorage.removeItem('esencias_data');
-            location.reload();
-        }
-    }
-
-    // Cargar al iniciar
-    cargarProgreso();
-</script>
-
+        loadProgress();
+        calculate();
+    </script>
 </body>
 </html>
