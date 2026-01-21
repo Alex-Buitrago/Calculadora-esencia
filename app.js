@@ -402,6 +402,27 @@ const App = {
             input.addEventListener('input', debouncedCalculate);
         });
 
+        // Quantity buttons
+        document.querySelectorAll('.qty-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const essenceName = e.currentTarget.dataset.essence;
+                const input = document.getElementById(`essence-${essenceName}`);
+                const currentValue = parseInt(input.value) || 0;
+                
+                if (e.currentTarget.classList.contains('qty-plus')) {
+                    input.value = currentValue + 1;
+                } else if (e.currentTarget.classList.contains('qty-minus')) {
+                    input.value = Math.max(0, currentValue - 1);
+                }
+                
+                // Trigger input event to recalculate
+                input.dispatchEvent(new Event('input'));
+                
+                // Visual feedback
+                Utils.animate(e.currentTarget, 'pulse');
+            });
+        });
+
         // Button clicks
         DOM.btnSave.addEventListener('click', EventHandlers.handleSave);
         DOM.btnClear.addEventListener('click', EventHandlers.handleClear);
