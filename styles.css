@@ -254,6 +254,14 @@ body {
     outline: none;
     transition: all var(--transition-normal);
     font-family: inherit;
+    -moz-appearance: textfield;
+}
+
+/* Ocultar flechas de input number */
+.config-input::-webkit-outer-spin-button,
+.config-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 .config-input:focus {
@@ -308,38 +316,11 @@ body {
     50% { opacity: 0.8; transform: scale(1.1); }
 }
 
-.btn-icon {
-    background: var(--bg-input);
-    border: 2px solid var(--border);
-    color: var(--accent);
-    width: 36px;
-    height: 36px;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-}
-
-.btn-icon:hover {
-    background: var(--primary);
-    color: white;
-    transform: scale(1.1);
-}
-
 .items-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: var(--spacing-md);
     transition: all var(--transition-normal);
-}
-
-.items-grid.collapsed {
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
 }
 
 .item-card {
@@ -412,6 +393,9 @@ body {
     color: var(--accent);
 }
 
+/* ========================================
+   QUANTITY CONTROLS (Botones + y -)
+   ======================================== */
 .quantity-control {
     display: flex;
     align-items: center;
@@ -493,6 +477,14 @@ body {
     font-size: 1.1rem;
     outline: none;
     font-family: inherit;
+    -moz-appearance: textfield;
+}
+
+/* Ocultar flechas de input number */
+.item-input::-webkit-outer-spin-button,
+.item-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }
 
 /* ========================================

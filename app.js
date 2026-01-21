@@ -58,7 +58,6 @@ const DOM = {
     btnSave: document.getElementById('btn-save'),
     btnClear: document.getElementById('btn-clear'),
     btnExport: document.getElementById('btn-export'),
-    toggleItems: document.getElementById('toggle-items'),
     toast: document.getElementById('toast'),
     toastMessage: document.querySelector('.toast-message')
 };
@@ -176,16 +175,20 @@ const UI = {
                     <div class="item-price">$${essence.price}</div>
                 </div>
             </div>
-            <input 
-                type="number" 
-                class="item-input essence-input" 
-                id="essence-${essence.name}" 
-                min="0" 
-                step="1"
-                placeholder="0"
-                data-price="${essence.price}"
-                data-name="${essence.name}"
-            >
+            <div class="quantity-control">
+                <button class="qty-btn qty-minus" data-essence="${essence.name}" type="button" aria-label="Disminuir">−</button>
+                <input 
+                    type="number" 
+                    class="item-input essence-input" 
+                    id="essence-${essence.name}" 
+                    min="0" 
+                    step="1"
+                    value="0"
+                    data-price="${essence.price}"
+                    data-name="${essence.name}"
+                >
+                <button class="qty-btn qty-plus" data-essence="${essence.name}" type="button" aria-label="Aumentar">+</button>
+            </div>
         `;
         
         return card;
@@ -306,10 +309,41 @@ const EventHandlers = {
         Calculator.calculate();
     },
 
+    handleQuantityButton(event) {
+        const button = event.currentTarget;
+        const essenceName = button.dataset.essence;
+        const input = document.getElementById(`essence-${essenceName}`);
+        
+        if (!input) return;
+
+        let currentValue = parseInt(input.value) || 0;
+
+        // Increment or decrement based on button type
+        if (button.classList.contains('qty-plus')) {
+            currentValue++;
+        } else if (button.classList.contains('qty-minus') && currentValue > 0) {
+            currentValue--;
+        }
+
+        // Update input value
+        input.value = currentValue;
+
+        // Update state
+        appState.updateQuantity(essenceName, currentValue);
+
+        // Recalculate
+        Calculator.calculate();
+
+        // Visual feedback
+        button.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+            button.style.transform = '';
+        }, 150);
+    },
+
     handleSave() {
         if (appState.save()) {
             UI.showToast('✅ Progreso guardado exitosamente');
-            Utils.animate(DOM.btnSave, 'pulse');
         } else {
             UI.showToast('❌ Error al guardar el progreso');
         }
@@ -343,15 +377,6 @@ const EventHandlers = {
             console.error('Error exporting data:', error);
             UI.showToast('❌ Error al exportar los datos');
         }
-    },
-
-    handleToggleItems() {
-        const grid = DOM.itemsGrid;
-        const button = DOM.toggleItems;
-        
-        grid.classList.toggle('collapsed');
-        button.querySelector('span').textContent = 
-            grid.classList.contains('collapsed') ? '▶' : '▼';
     }
 };
 
@@ -402,32 +427,15 @@ const App = {
             input.addEventListener('input', debouncedCalculate);
         });
 
-        // Quantity buttons
+        // Quantity buttons (+ and -)
         document.querySelectorAll('.qty-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const essenceName = e.currentTarget.dataset.essence;
-                const input = document.getElementById(`essence-${essenceName}`);
-                const currentValue = parseInt(input.value) || 0;
-                
-                if (e.currentTarget.classList.contains('qty-plus')) {
-                    input.value = currentValue + 1;
-                } else if (e.currentTarget.classList.contains('qty-minus')) {
-                    input.value = Math.max(0, currentValue - 1);
-                }
-                
-                // Trigger input event to recalculate
-                input.dispatchEvent(new Event('input'));
-                
-                // Visual feedback
-                Utils.animate(e.currentTarget, 'pulse');
-            });
+            btn.addEventListener('click', EventHandlers.handleQuantityButton);
         });
 
         // Button clicks
         DOM.btnSave.addEventListener('click', EventHandlers.handleSave);
         DOM.btnClear.addEventListener('click', EventHandlers.handleClear);
         DOM.btnExport.addEventListener('click', EventHandlers.handleExport);
-        DOM.toggleItems.addEventListener('click', EventHandlers.handleToggleItems);
 
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
@@ -489,18 +497,6 @@ const App = {
 document.addEventListener('DOMContentLoaded', () => {
     App.init();
 });
-
-// ========================================
-// SERVICE WORKER (Optional - for offline support)
-// ========================================
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        // Uncomment to enable service worker
-        // navigator.serviceWorker.register('/sw.js')
-        //     .then(reg => console.log('Service Worker registered'))
-        //     .catch(err => console.log('Service Worker registration failed'));
-    });
-}
 
 // ========================================
 // EXPORT FOR TESTING (Optional)
