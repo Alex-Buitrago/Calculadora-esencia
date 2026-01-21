@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Esencias Pro - Visual Edition</title>
+    <style>
+        :root { --primary: #9d4edd; --accent: #c77dff; --bg: #0b0118; --card: #1a0033; }
+        
+        body { 
+            font-family: 'Segoe UI', system-ui, sans-serif; 
+            background: var(--bg); color: #eee; 
+            display: flex; justify-content: center; 
+            padding: 10px; margin: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .container { 
+            width: 100%; max-width: 500px; 
+            background: var(--card); padding: 20px; 
+            border-radius: 20px; border: 1px solid #5a189a; 
+            box-shadow: 0 10px 40px rgba(0,0,0,0.9);
+        }
+
+        h2 { text-align: center; color: var(--accent); margin-bottom: 20px; font-size: 1.3rem; text-transform: uppercase; }
+
+        .grid-config { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
+        .config-box { background: rgba(157, 78, 221, 0.1); padding: 10px; border-radius: 12px; border: 1px solid #3c096c; }
+        label { font-size: 0.7rem; color: var(--accent); display: block; margin-bottom: 4px; font-weight: bold; }
+
+        .grid-items { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        @media (max-width: 480px) { .grid-items { grid-template-columns: 1fr; } .grid-config { grid-template-columns: 1fr; } }
+
+        .item-card { 
+            background: rgba(255,255,255,0.03); padding: 10px; border-radius: 12px; 
+            display: flex; justify-content: space-between; align-items: center; 
+            border-left: 4px solid var(--primary);
+        }
+
+        .item-info { display: flex; align-items: center; gap: 10px; }
+        .essence-img { width: 35px; height: 35px; object-fit: contain; filter: drop-shadow(0 0 5px var(--primary)); }
+
+        input { 
+            width: 65px; background: #240046; border: 1px solid #7b2cbf; 
+            color: white; padding: 6px; border-radius: 8px; text-align: right; 
+            font-weight: bold; outline: none;
+        }
+
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        button { padding: 12px; border-radius: 10px; border: none; cursor: pointer; font-weight: bold; font-size: 0.85rem; }
+        .btn-save { background: var(--primary); color: white; }
+        .btn-clear { background: #3c096c; color: #c77dff; }
+
+        .results { padding: 15px; background: rgba(0,0,0,0.4); border-radius: 15px; border: 1px solid var(--primary); }
+        .res-row { display: flex; justify-content: space-between; font-size: 0.95rem; margin-bottom: 4px; }
+        .status { text-align: center; font-weight: bold; margin-top: 8px; padding: 10px; border-radius: 8px; }
+        .meta-ok { background: rgba(76, 175, 80, 0.2); color: #81c784; border: 1px solid #4caf50; }
+        .meta-fail { background: rgba(244, 67, 54, 0.2); color: #e57373; border: 1px solid #f44336; }
+
+        .recom-section { margin-top: 15px; background: #240046; padding: 15px; border-radius: 12px; border: 1px dashed var(--accent); }
+        .recom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.8rem; }
+        .optimo { color: #81c784; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Calculadora Forge</h2>
+    
+    <div class="grid-config">
+        <div class="config-box">
+            <label>💰 SALDO ACTUAL</label>
+            <input type="number" id="saldo-inicial" style="width: 90%" value="0" oninput="calcular()">
+        </div>
+        <div class="config-box">
+            <label>🎯 META FINAL</label>
+            <input type="number" id="meta-valor" style="width: 90%" value="0" oninput="calcular()">
+        </div>
+    </div>
+
+    <div id="inputs-area" class="grid-items"></div>
+
+    <div class="btn-group">
+        <button class="btn-save" onclick="guardarProgreso()">💾 GUARDAR</button>
+        <button class="btn-clear" onclick="limpiarTodo()">🧹 LIMPIAR</button>
+    </div>
+
+    <div class="results">
+        <div class="res-row"><span>Venta:</span><span id="total-venta">0</span></div>
+        <div class="res-row" style="color: var(--accent); font-weight: bold;">
+            <span>Total:</span><span id="nuevo-balance">0</span>
+        </div>
+        <div id="mensaje-meta" class="status meta-ok">Ingresa datos</div>
+    </div>
+
+    <div id="recomendacion-area" class="recom-section">
+        <strong style="color:var(--accent); display:block; margin-bottom:8px;">💡 Sugerencias</strong>
+        <div id="recom-list" class="recom-grid"></div>
+    </div>
+</div>
+
+<script>
+    const esencias = [
+        { n: "Minúscula", p: 2.5, img: "https://static.wikitide.net/theforgewiki/e/ef/TinyEssence.png" },
+        { n: "Pequeña", p: 5, img: "https://static.wikitide.net/theforgewiki/8/84/SmallEssence.png" },
+        { n: "Mediana", p: 15, img: "https://static.wikitide.net/theforgewiki/thumb/3/38/MediumEssence.png/100px-MediumEssence.png" },
+        { n: "Grande", p: 35, img: "https://static.wikitide.net/theforgewiki/thumb/3/33/LargeEssence.png/100px-LargeEssence.png" },
+        { n: "Mayor", p: 50, img: "https://static.wikitide.net/theforgewiki/thumb/3/3c/GreaterEssence.png/100px-GreaterEssence.png" },
+        { n: "Superior", p: 75, img: "https://static.wikitide.net/theforgewiki/thumb/6/6b/SuperiorEssence.png/100px-SuperiorEssence.png" },
+        { n: "Épica", p: 100, img: "https://static.wikitide.net/theforgewiki/thumb/8/89/EpicEssence.png/100px-EpicEssence.png" }
+    ];
+
+    const inputsArea = document.getElementById('inputs-area');
+    const fmt = (n) => Math.ceil(n).toLocaleString('de-DE');
+
+    esencias.forEach(es => {
+        const div = document.createElement('div');
+        div.className = 'item-card';
+        div.innerHTML = `
+            <div class="item-info">
+                <img src="${es.img}" class="essence-img" alt="${es.n}">
+                <div><span style="display:block; font-size:0.85rem">${es.n}</span><b style="color:var(--accent); font-size:0.8rem">$${es.p}</b></div>
+            </div>
+            <input type="number" class="cant" id="input-${es.n}" min="0" placeholder="0" oninput="calcular()" data-precio="${es.p}">
+        `;
+        inputsArea.appendChild(div);
+    });
+
+    function calcular() {
+        const saldo = parseFloat(document.getElementById('saldo-inicial').value) || 0;
+        const meta = parseFloat(document.getElementById('meta-valor').value) || 0;
+        let venta = 0;
+        
+        document.querySelectorAll('.cant').forEach(i => {
+            venta += (parseFloat(i.value) || 0) * parseFloat(i.dataset.precio);
+        });
+
+        const total = saldo + venta;
+        const faltante = meta - total;
+        
+        document.getElementById('total-venta').innerText = fmt(venta);
+        document.getElementById('nuevo-balance').innerText = fmt(total);
+
+        const msg = document.getElementById('mensaje-meta');
+        const recomArea = document.getElementById('recomendacion-area');
+        const recomList = document.getElementById('recom-list');
+        recomList.innerHTML = '';
+
+        if (total >= meta) {
+            msg.className = 'status meta-ok';
+            msg.innerText = meta === 0 ? 'Esperando datos...' : '¡META LOGRADA! +' + fmt(total - meta);
+            recomArea.style.display = 'none';
+        } else {
+            msg.className = 'status meta-fail';
+            msg.innerText = 'Faltan: ' + fmt(faltante);
+            recomArea.style.display = 'block';
+
+            [...esencias].reverse().forEach(es => {
+                const unidades = Math.ceil(faltante / es.p);
+                const isOptimo = es.n === "Épica" ? 'class="optimo"' : '';
+                recomList.innerHTML += `<div ${isOptimo}>${es.n}: <b>${fmt(unidades)}</b></div>`;
+            });
+        }
+    }
+
+    function guardarProgreso() {
+        const datos = {
+            saldo: document.getElementById('saldo-inicial').value,
+            meta: document.getElementById('meta-valor').value,
+            cantidades: {}
+        };
+        document.querySelectorAll('.cant').forEach(i => { datos.cantidades[i.id] = i.value; });
+        localStorage.setItem('esencias_data_v3', JSON.stringify(datos));
+        alert("¡Progreso guardado!");
+    }
+
+    function cargarProgreso() {
+        const guardado = localStorage.getItem('esencias_data_v3');
+        if (guardado) {
+            const datos = JSON.parse(guardado);
+            document.getElementById('saldo-inicial').value = datos.saldo;
+            document.getElementById('meta-valor').value = datos.meta;
+            for (const id in datos.cantidades) {
+                const input = document.getElementById(id);
+                if (input) input.value = datos.cantidades[id];
+            }
+            calcular();
+        }
+    }
+
+    function limpiarTodo() {
+        if(confirm("¿Borrar todo el progreso?")) {
+            localStorage.removeItem('esencias_data_v3');
+            location.reload();
+        }
+    }
+
+    cargarProgreso();
+</script>
+
+</body>
+</html>
