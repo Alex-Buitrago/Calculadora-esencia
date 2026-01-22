@@ -39,8 +39,6 @@ const ESSENCES_DATA = [
     }
 ];
 
-const STORAGE_KEY = 'esencias_forge_data_v4';
-
 // ========================================
 // DOM ELEMENTS CACHE
 // ========================================
@@ -84,7 +82,6 @@ class AppState {
 
     save() {
         try {
-            // Using in-memory storage instead of localStorage
             window.forgeCalculatorData = JSON.stringify(this.data);
             return true;
         } catch (error) {
@@ -131,8 +128,16 @@ const appState = new AppState();
 // UTILITY FUNCTIONS
 // ========================================
 const Utils = {
+    parseNumber(value) {
+        if (typeof value === 'number') return value;
+        const cleaned = String(value).replace(/,/g, '');
+        const parsed = parseFloat(cleaned);
+        return isNaN(parsed) ? 0 : parsed;
+    },
+
     formatNumber(num) {
-        return Math.ceil(num).toLocaleString('de-DE');
+        const value = typeof num === 'number' ? num : this.parseNumber(num);
+        return Math.ceil(value).toLocaleString('en-US');
     },
 
     debounce(func, wait) {
@@ -178,11 +183,10 @@ const UI = {
             <div class="quantity-control">
                 <button class="qty-btn qty-minus" data-essence="${essence.name}" type="button" aria-label="Disminuir">−</button>
                 <input 
-                    type="number" 
-                    class="item-input essence-input" 
+                    type="text" 
+                    inputmode="numeric"
+                    class="item-input essence-input"
                     id="essence-${essence.name}" 
-                    min="0" 
-                    step="1"
                     value="0"
                     data-price="${essence.price}"
                     data-name="${essence.name}"
@@ -225,13 +229,12 @@ const UI = {
 // ========================================
 const Calculator = {
     calculate() {
-        const saldo = parseFloat(DOM.saldoInput.value) || 0;
-        const meta = parseFloat(DOM.metaInput.value) || 0;
+        const saldo = Utils.parseNumber(DOM.saldoInput.value);
+        const meta = Utils.parseNumber(DOM.metaInput.value);
         let totalVenta = 0;
 
-        // Calculate total sales
         document.querySelectorAll('.essence-input').forEach(input => {
-            const quantity = parseFloat(input.value) || 0;
+            const quantity = Utils.parseNumber(input.value);
             const price = parseFloat(input.dataset.price);
             totalVenta += quantity * price;
         });
@@ -239,14 +242,11 @@ const Calculator = {
         const nuevoBalance = saldo + totalVenta;
         const faltante = meta - nuevoBalance;
 
-        // Update UI
         DOM.totalVenta.textContent = Utils.formatNumber(totalVenta);
         DOM.nuevoBalance.textContent = Utils.formatNumber(nuevoBalance);
 
-        // Update status
         this.updateStatus(saldo, meta, nuevoBalance, faltante);
 
-        // Auto-save state
         appState.update('saldo', saldo);
         appState.update('meta', meta);
         appState.save();
@@ -278,7 +278,6 @@ const Calculator = {
         DOM.recommendationsSection.classList.remove('hidden');
         DOM.recommendationsGrid.innerHTML = '';
 
-        // Create recommendations sorted by price (highest first)
         [...ESSENCES_DATA].reverse().forEach(essence => {
             const units = Math.ceil(faltante / essence.price);
             const isOptimal = essence.name === "Épica";
@@ -292,20 +291,23 @@ const Calculator = {
 // EVENT HANDLERS
 // ========================================
 const EventHandlers = {
-    handleInputChange(event) {
+    handleConfigInput(event) {
+        Calculator.calculate();
+    },
+
+    handleEssenceInput(event) {
         const input = event.target;
+        const numericValue = Utils.parseNumber(input.value);
         
-        // Validate input
-        if (input.value < 0) {
-            input.value = 0;
+        if (numericValue === 0) {
+            input.classList.add('zero');
+        } else {
+            input.classList.remove('zero');
         }
-
-        // Update state if it's an essence input
-        if (input.classList.contains('essence-input')) {
-            const essenceName = input.dataset.name;
-            appState.updateQuantity(essenceName, input.value);
-        }
-
+        
+        const essenceName = input.dataset.name;
+        appState.updateQuantity(essenceName, numericValue);
+        
         Calculator.calculate();
     },
 
@@ -316,25 +318,25 @@ const EventHandlers = {
         
         if (!input) return;
 
-        let currentValue = parseInt(input.value) || 0;
+        let currentValue = Utils.parseNumber(input.value);
 
-        // Increment or decrement based on button type
         if (button.classList.contains('qty-plus')) {
             currentValue++;
         } else if (button.classList.contains('qty-minus') && currentValue > 0) {
             currentValue--;
         }
 
-        // Update input value
-        input.value = currentValue;
+        input.value = Utils.formatNumber(currentValue);
 
-        // Update state
+        if (currentValue === 0) {
+            input.classList.add('zero');
+        } else {
+            input.classList.remove('zero');
+        }
+        
         appState.updateQuantity(essenceName, currentValue);
-
-        // Recalculate
         Calculator.calculate();
 
-        // Visual feedback
         button.style.transform = 'scale(0.9)';
         setTimeout(() => {
             button.style.transform = '';
@@ -359,25 +361,41 @@ const EventHandlers = {
     },
 
     handleExport() {
-        try {
-            const exportData = appState.export();
-            const dataStr = JSON.stringify(exportData, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `forge-calculator-${Date.now()}.json`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            
-            UI.showToast('📤 Datos exportados exitosamente');
-        } catch (error) {
-            console.error('Error exporting data:', error);
-            UI.showToast('❌ Error al exportar los datos');
-        }
-    }
+        const rows = [
+            ['Esencia', 'Cantidad', 'Precio', 'Total']
+        ];
+    
+        ESSENCES_DATA.forEach(essence => {
+            const qty = appState.data.quantities[essence.name] || 0;
+            if (qty > 0) {
+                rows.push([
+                    essence.name,
+                    qty,
+                    essence.price,
+                    qty * essence.price
+                ]);
+            }
+        });
+    
+        const worksheet = XLSX.utils.aoa_to_sheet(rows);
+        const workbook = XLSX.utils.book_new();
+    
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Resumen');
+    
+        worksheet['!cols'] = [
+            { wch: 20 },
+            { wch: 12 },
+            { wch: 10 },
+            { wch: 14 }
+        ];
+    
+        XLSX.writeFile(
+            workbook,
+            `forge-resumen-${Date.now()}.xlsx`
+        );
+    
+        UI.showToast('📊 Excel exportado correctamente');
+    }    
 };
 
 // ========================================
@@ -387,19 +405,10 @@ const App = {
     init() {
         console.log('🚀 Initializing Forge Calculator...');
         
-        // Render essence cards
         this.renderEssences();
-        
-        // Setup event listeners
         this.setupEventListeners();
-        
-        // Load saved data
         this.loadSavedData();
-        
-        // Initial calculation
         Calculator.calculate();
-        
-        // Add animation on scroll
         this.setupAnimations();
         
         console.log('✅ Forge Calculator initialized successfully');
@@ -408,42 +417,41 @@ const App = {
     renderEssences() {
         ESSENCES_DATA.forEach((essence, index) => {
             const card = UI.createEssenceCard(essence);
-            // Stagger animation
             card.style.animationDelay = `${index * 0.05}s`;
             DOM.itemsGrid.appendChild(card);
         });
     },
 
     setupEventListeners() {
-        // Input changes (with debouncing for performance)
-        const debouncedCalculate = Utils.debounce((e) => {
-            EventHandlers.handleInputChange(e);
-        }, 300);
+        // Config inputs: calcular en tiempo real, formatear al salir
+        DOM.saldoInput.addEventListener('input', EventHandlers.handleConfigInput);
+        DOM.metaInput.addEventListener('input', EventHandlers.handleConfigInput);
+        
+        DOM.saldoInput.addEventListener('blur', EventHandlers.handleConfigBlur);
+        DOM.metaInput.addEventListener('blur', EventHandlers.handleConfigBlur);
 
-        DOM.saldoInput.addEventListener('input', debouncedCalculate);
-        DOM.metaInput.addEventListener('input', debouncedCalculate);
+        // Essence inputs: con debounce
+        const debouncedEssence = Utils.debounce((e) => {
+            EventHandlers.handleEssenceInput(e);
+        }, 150);
         
         document.querySelectorAll('.essence-input').forEach(input => {
-            input.addEventListener('input', debouncedCalculate);
+            input.addEventListener('input', debouncedEssence);
+            input.addEventListener('blur', EventHandlers.handleEssenceBlur);
         });
 
-        // Quantity buttons (+ and -)
         document.querySelectorAll('.qty-btn').forEach(btn => {
             btn.addEventListener('click', EventHandlers.handleQuantityButton);
         });
 
-        // Button clicks
         DOM.btnSave.addEventListener('click', EventHandlers.handleSave);
         DOM.btnClear.addEventListener('click', EventHandlers.handleClear);
         DOM.btnExport.addEventListener('click', EventHandlers.handleExport);
 
-        // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey || e.metaKey) {
-                if (e.key === 's') {
-                    e.preventDefault();
-                    EventHandlers.handleSave();
-                }
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                EventHandlers.handleSave();
             }
         });
     },
@@ -452,15 +460,16 @@ const App = {
         if (appState.load()) {
             const data = appState.data;
             
-            // Restore inputs
-            DOM.saldoInput.value = data.saldo || 0;
-            DOM.metaInput.value = data.meta || 0;
+            DOM.saldoInput.value = Utils.formatNumber(data.saldo || 0);
+            DOM.metaInput.value = Utils.formatNumber(data.meta || 0);
             
-            // Restore essence quantities
             for (const [essenceName, quantity] of Object.entries(data.quantities)) {
                 const input = document.getElementById(`essence-${essenceName}`);
                 if (input) {
-                    input.value = quantity;
+                    input.value = Utils.formatNumber(quantity);
+                    if (quantity === 0) {
+                        input.classList.add('zero');
+                    }
                 }
             }
             
@@ -470,7 +479,6 @@ const App = {
     },
 
     setupAnimations() {
-        // Add intersection observer for scroll animations
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
@@ -498,9 +506,6 @@ document.addEventListener('DOMContentLoaded', () => {
     App.init();
 });
 
-// ========================================
-// EXPORT FOR TESTING (Optional)
-// ========================================
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         Calculator,
